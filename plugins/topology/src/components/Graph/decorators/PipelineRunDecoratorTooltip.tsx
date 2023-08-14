@@ -1,7 +1,5 @@
 import * as React from 'react';
 
-import { random } from 'lodash';
-
 import {
   ComputedStatus,
   getRunStatusColor,
@@ -28,10 +26,11 @@ const PipelineRunDecoratorTooltip = ({
     return null;
   }
   const taskStatus = getTaskStatus(pipelineRun, taskRuns);
+  const random = Math.floor(Math.random() * 100 + 1);
 
   const pipelineBars = (
     <HorizontalStackedBars
-      id={pipelineRun?.metadata?.uid ?? random().toString()}
+      id={pipelineRun?.metadata?.uid ?? random.toString()}
       height="1em"
       inline
       values={Object.keys(ComputedStatus).map(rStatus => ({

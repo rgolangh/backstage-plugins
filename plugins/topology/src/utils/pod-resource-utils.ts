@@ -11,7 +11,11 @@ import {
 
 import { AllPodStatus, PodPhase } from '../components/Pods/pod';
 import { ReplicaSetGVK, StatefulSetGVK } from '../models';
-import { PodControllerOverviewItem, PodRCData } from '../types/pods';
+import {
+  OverviewItemAlerts,
+  PodControllerOverviewItem,
+  PodRCData,
+} from '../types/pods';
 import {
   GroupVersionKind,
   K8sResponseData,
@@ -42,10 +46,10 @@ const isIdled = (deployment: K8sWorkloadResource): boolean => {
 
 export const getDeploymentRevision = (
   obj: K8sWorkloadResource,
-): number | null => {
+): number | undefined => {
   const revisionAnnotation = getAnnotation(obj, DEPLOYMENT_REVISION_ANNOTATION);
   const revision = revisionAnnotation && parseInt(revisionAnnotation, 10);
-  return revision && Number.isFinite(revision) ? revision : null;
+  return revision && Number.isFinite(revision) ? revision : undefined;
 };
 
 const getOwnedResources = <T extends K8sWorkloadResource>(
@@ -111,7 +115,7 @@ const sortByRevision = (
     return leftVersion - rightVersion;
   };
 
-  return replicators?.sort(compare);
+  return Array.from(replicators)?.sort(compare);
 };
 
 const sortReplicaSetsByRevision = (
@@ -138,7 +142,7 @@ const podAlertKey = (
   return `${alert}--${id}--${containerName}`;
 };
 
-const getPodAlerts = (pod: V1Pod) => {
+const getPodAlerts = (pod: V1Pod): OverviewItemAlerts => {
   const alerts = {} as { [key: string]: any };
   const statuses = [
     ...(pod?.status?.initContainerStatuses
@@ -177,27 +181,27 @@ const getPodAlerts = (pod: V1Pod) => {
   return alerts;
 };
 
-const combinePodAlerts = (pods: V1Pod[]) =>
+const combinePodAlerts = (pods: V1Pod[]): OverviewItemAlerts =>
   pods.reduce(
     (acc, pod) => ({
       ...acc,
       ...getPodAlerts(pod),
     }),
-    {},
+    {} as OverviewItemAlerts,
   );
 
 const toResourceItem = (
   rs: V1ReplicaSet,
   gvk: GroupVersionKind,
   resources: K8sResponseData,
-) => {
+): PodControllerOverviewItem => {
   const obj = {
     ...rs,
     apiVersion: apiVersionForModel(gvk),
     kind: `${gvk.kind}`,
   };
   const podData = getPodsForResource(rs, resources);
-  const pods = podData && podData;
+  const pods = podData?.length > 0 ? podData : [];
   const alerts = combinePodAlerts(pods);
   return {
     alerts,
@@ -235,11 +239,8 @@ const getReplicaSetsForResource = (
   const replicaSets = getActiveReplicaSets(deployment, resources);
   const sortReplicaSets = sortReplicaSetsByRevision(replicaSets);
   return sortReplicaSets.map((rs: V1ReplicaSet) =>
-    getIdledStatus(
-      toResourceItem(rs, ReplicaSetGVK, resources) as PodControllerOverviewItem,
-      deployment,
-    ),
-  );
+    getIdledStatus(toResourceItem(rs, ReplicaSetGVK, resources), deployment),
+  ) as PodControllerOverviewItem[];
 };
 
 const getActiveStatefulSets = (
@@ -261,14 +262,7 @@ export const getStatefulSetsResource = (
 ) => {
   const activeStatefulSets = getActiveStatefulSets(statefulSet, resources);
   return activeStatefulSets.map(pss =>
-    getIdledStatus(
-      toResourceItem(
-        pss as V1StatefulSet,
-        StatefulSetGVK,
-        resources,
-      ) as PodControllerOverviewItem,
-      statefulSet,
-    ),
+    getIdledStatus(toResourceItem(pss, StatefulSetGVK, resources), statefulSet),
   );
 };
 
@@ -282,8 +276,8 @@ export const getPodsForDeployment = (
 
   return {
     obj: deployment,
-    current: current as PodControllerOverviewItem,
-    previous: previous as PodControllerOverviewItem,
+    current,
+    previous,
     isRollingOut,
     pods: [...(current?.pods || []), ...(previous?.pods || [])] as V1Pod[],
   };
@@ -408,7 +402,7 @@ export const podPhase = (pod: V1Pod): PodPhase => {
   pod.status.initContainerStatuses?.forEach(
     (container: V1ContainerStatus, i: number) => {
       const { terminated, waiting } = container.state as V1ContainerState;
-      if (terminated && terminated.exitCode === 0) {
+      if (terminated?.exitCode === 0) {
         return true;
       }
 
