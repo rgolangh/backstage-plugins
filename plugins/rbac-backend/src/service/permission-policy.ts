@@ -17,6 +17,7 @@ import {
 import { Enforcer, FileAdapter, newEnforcer, newModelFromString } from 'casbin';
 import { Logger } from 'winston';
 
+import { ConditionalStorage } from './conditional-storage';
 import { MODEL } from './permission-model';
 
 const useAdmins = (admins: Config[], enf: Enforcer) => {
@@ -62,10 +63,12 @@ const addPredefinedPolicies = async (
 export class RBACPermissionPolicy implements PermissionPolicy {
   private readonly enforcer: Enforcer;
   private readonly logger: Logger;
+  private readonly conditionStorage: ConditionalStorage;
 
   public static async build(
     logger: Logger,
     configApi: ConfigApi,
+    conditionalStorage: ConditionalStorage,
     enf: Enforcer,
   ): Promise<RBACPermissionPolicy> {
     const adminUsers = configApi.getOptionalConfigArray(
@@ -84,12 +87,17 @@ export class RBACPermissionPolicy implements PermissionPolicy {
       useAdmins(adminUsers, enf);
     }
 
-    return new RBACPermissionPolicy(enf, logger);
+    return new RBACPermissionPolicy(enf, logger, conditionalStorage);
   }
 
-  private constructor(enforcer: Enforcer, logger: Logger) {
+  private constructor(
+    enforcer: Enforcer,
+    logger: Logger,
+    conditionStorage: ConditionalStorage,
+  ) {
     this.enforcer = enforcer;
     this.logger = logger;
+    this.conditionStorage = conditionStorage;
   }
 
   async handle(
@@ -107,11 +115,28 @@ export class RBACPermissionPolicy implements PermissionPolicy {
       const action = request.permission.attributes.action ?? 'use';
 
       if (isResourcePermission(request.permission)) {
+        const conditionalDecision = await this.conditionStorage.findCondition(
+          request.permission.resourceType,
+        );
+        if (conditionalDecision) {
+          console.log(`===Condition!!!!`);
+          return conditionalDecision;
+        }
+        console.log(
+          `===No condition. Resource type is ${request.permission.resourceType}`,
+        );
+      }
+
+      if (isResourcePermission(request.permission)) {
         status = await this.isAuthorized(
           identityResp?.identity,
           request.permission.resourceType,
           action,
         );
+
+        if (status) {
+          console.log('Condition should be here');
+        }
       } else {
         status = await this.isAuthorized(
           identityResp?.identity,
