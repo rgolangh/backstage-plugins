@@ -36,7 +36,7 @@ import {
   RESOURCE_TYPE_POLICY_ENTITY,
 } from '@janus-idp/backstage-plugin-rbac-common';
 
-import { ConditionalStorage } from './conditional-storage';
+import { ConditionalStorage } from '../database/conditional-storage';
 import {
   validateEntityReference,
   validatePolicy,
