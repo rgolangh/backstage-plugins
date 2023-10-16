@@ -56,6 +56,15 @@ jest.mock('casbin', () => {
   };
 });
 
+const conditionalStorage = {
+  getConditions: jest.fn().mockImplementation(),
+  createCondition: jest.fn().mockImplementation(),
+  findCondition: jest.fn().mockImplementation(),
+  getCondition: jest.fn().mockImplementation(),
+  deleteCondition: jest.fn().mockImplementation(),
+  updateCondition: jest.fn().mockImplementation(),
+};
+
 describe('REST policies api', () => {
   let app: express.Express;
 
@@ -118,6 +127,7 @@ describe('REST policies api', () => {
       policy: await RBACPermissionPolicy.build(
         logger,
         config,
+        conditionalStorage,
         mockEnforcer as Enforcer,
       ),
     };
@@ -126,6 +136,7 @@ describe('REST policies api', () => {
       mockPermissionEvaluator,
       options,
       mockEnforcer as Enforcer,
+      conditionalStorage,
     );
     const router = await server.serve();
     app = express().use(router);
