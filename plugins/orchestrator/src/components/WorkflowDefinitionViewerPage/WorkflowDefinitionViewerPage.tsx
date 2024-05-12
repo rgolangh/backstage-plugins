@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAsync } from 'react-use';
-
+import { useAsync} from 'react-use';
+import { usePermission } from '@backstage/plugin-permission-react';
 import { InfoCard, ResponseErrorPanel } from '@backstage/core-components';
 import {
   useApi,
@@ -21,10 +21,14 @@ import {
 import { BaseOrchestratorPage } from '../BaseOrchestratorPage';
 import { EditorViewKind, WorkflowEditor } from '../WorkflowEditor';
 import WorkflowDefinitionDetailsCard from './WorkflowDefinitionDetailsCard';
+import { orchestratorWorkflowExecutePermission } from '@janus-idp/backstage-plugin-orchestrator-common';
 
 export const WorkflowDefinitionViewerPage = () => {
   const { workflowId, format } = useRouteRefParams(workflowDefinitionsRouteRef);
   const orchestratorApi = useApi(orchestratorApiRef);
+  const { loading: loadingPermission, allowed: canRun } = usePermission({
+    permission: orchestratorWorkflowExecutePermission,
+  });
   const {
     value: workflowOverview,
     loading,
@@ -61,13 +65,16 @@ export const WorkflowDefinitionViewerPage = () => {
             {loading ? (
               <Skeleton variant="text" width="5rem" />
             ) : (
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleExecute}
-              >
-                Run
-              </Button>
+              !loadingPermission && (
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleExecute}
+                    disabled={!canRun}
+                  >
+                    Run
+                  </Button>
+              )
             )}
           </Grid>
         </Grid>
