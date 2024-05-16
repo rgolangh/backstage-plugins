@@ -36,10 +36,10 @@ export const WorkflowsTable = ({ items }: WorkflowsTableProps) => {
   const definitionLink = useRouteRef(workflowDefinitionsRouteRef);
   const executeWorkflowLink = useRouteRef(executeWorkflowRouteRef);
   const [data, setData] = useState<FormattedWorkflowOverview[]>([]);
-  const { loading: loadingPermission, allowed: canExecute} = usePermission({
+  const permittedToExecute = usePermission({
     permission: orchestratorWorkflowExecutePermission,
   });
-  const { loading: loadingPermission1, allowed: canReadWorkflows} = usePermission({
+  const permittedToReadWorkflows = usePermission({
     permission: orchestratorWorkflowInstancesReadPermission,
   });
   const initialState = useMemo(
@@ -72,7 +72,7 @@ export const WorkflowsTable = ({ items }: WorkflowsTableProps) => {
       {
         icon: () => <PlayArrow />,
         tooltip: 'Execute',
-        disabled: !canExecute,
+        disabled: !permittedToExecute.allowed,
         onClick: (_, rowData) =>
           handleExecute(rowData as FormattedWorkflowOverview),
       },
@@ -139,7 +139,7 @@ export const WorkflowsTable = ({ items }: WorkflowsTableProps) => {
   );
 
   return (
-        !loadingPermission1 && canReadWorkflows && ( 
+        !permittedToReadWorkflows && ( 
         <OverrideBackstageTable<FormattedWorkflowOverview>
           title="Workflows"
           options={options}

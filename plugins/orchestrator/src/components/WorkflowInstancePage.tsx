@@ -90,7 +90,7 @@ export const WorkflowInstancePage = ({
   const [isAbortAlertDialogOpen, setIsAbortAlertDialogOpen] = useState(false);
   const [abortWorkflowInstanceErrorMsg, setAbortWorkflowInstanceErrorMsg] =
     useState('');
-    const { loading: loadingPermission, allowed: permittedToExecute} = usePermission({
+    const permittedToExecute = usePermission({
     permission: orchestratorWorkflowExecutePermission,
   });
 
@@ -210,7 +210,7 @@ export const WorkflowInstancePage = ({
                     <Button
                       variant="contained"
                       color="primary"
-                      disabled={!permittedToExecute || !canAbort}
+                      disabled={!permittedToExecute.allowed|| !canAbort}
                       onClick={canAbort ? handleRerun : undefined}
                     >
                       Retrigger
@@ -220,7 +220,7 @@ export const WorkflowInstancePage = ({
                     <Button
                       variant="contained"
                       color="secondary"
-                      disabled={!permittedToExecute || !canAbort}
+                      disabled={!permittedToExecute.allowed || !canAbort}
                       onClick={
                         canAbort ? toggleAbortConfirmationDialog : undefined
                       }
@@ -235,7 +235,7 @@ export const WorkflowInstancePage = ({
                   <Button
                     variant="contained"
                     color="primary"
-                    disabled={!permittedToExecute || !canRerun}
+                    disabled={!permittedToExecute.allowed || !canRerun}
                     onClick={canRerun ? handleRerun : undefined}
                   >
                     Rerun
